@@ -11,6 +11,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -20,6 +23,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "mylogger.h"
@@ -30,6 +34,9 @@
 
 const int WIDTH = 1280;
 const int HEIGHT = 720;
+
+const std::string MODEL_PATH = "models/Mineways2Skfb.obj";
+const std::string TEXTURE_PATH = "textures/Mineways2Skfb-RGBA.png";
 
 const std::vector<const char*> validationLayerNames = {
 	"VK_LAYER_LUNARG_standard_validation"
@@ -57,7 +64,7 @@ const std::vector<uint16_t> squareIndices2 = {
 };
 
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+const bool validationLayersAreEnabled = false;
 #else
 const bool validationLayersAreEnabled = true;
 #endif
@@ -246,32 +253,33 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 void HelloTriangleApplication::run(GameObject gameObject)
 {
-	squareIndices.resize(gameObject.indicesCount);
+	/*mainMeshIndices.resize(gameObject.indicesCount);
 	for (uint32_t i = 0; i < gameObject.indicesCount; i++)
 	{
-		squareIndices[i] = gameObject.indices[i];
+		mainMeshIndices[i] = gameObject.indices[i];
 	}
 
-	squareVertices.resize(gameObject.verticesCount);
+	mainMeshVertices.resize(gameObject.verticesCount);
 	for (uint32_t i = 0; i < gameObject.verticesCount; i++)
 	{
-		squareVertices[i].pos.x = gameObject.vertices[i].X;
-		squareVertices[i].pos.y = gameObject.vertices[i].Y;
-		squareVertices[i].pos.z = gameObject.vertices[i].Z;
-		squareVertices[i].color.x = gameObject.colors[i].X;
-		squareVertices[i].color.y = gameObject.colors[i].Y;
-		squareVertices[i].color.z = gameObject.colors[i].Z;
-		squareVertices[i].texCoord.x = gameObject.texCoords[i].X;
-		squareVertices[i].texCoord.y = gameObject.texCoords[i].Y;
-	}
+		mainMeshVertices[i].pos.x = gameObject.vertices[i].X;
+		mainMeshVertices[i].pos.y = gameObject.vertices[i].Y;
+		mainMeshVertices[i].pos.z = gameObject.vertices[i].Z;
+		mainMeshVertices[i].color.x = gameObject.colors[i].X;
+		mainMeshVertices[i].color.y = gameObject.colors[i].Y;
+		mainMeshVertices[i].color.z = gameObject.colors[i].Z;
+		mainMeshVertices[i].texCoord.x = gameObject.texCoords[i].X;
+		mainMeshVertices[i].texCoord.y = gameObject.texCoords[i].Y;
+	}*/
 
-	runForReal();
+	//runForReal();
+	run();
 }
 
 void HelloTriangleApplication::run()
 {
-	squareVertices = squareVertices2;
-	squareIndices = squareIndices2;
+	//mainMeshVertices = squareVertices2;
+	//mainMeshIndices = squareIndices2;
 
 	runForReal();
 }
@@ -322,6 +330,7 @@ void HelloTriangleApplication::initVulkan()
 	createTextureImage();
 	createTextureImageView();
 	createTextureSampler();
+	loadModel();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffer();
@@ -998,7 +1007,7 @@ VkFormat HelloTriangleApplication::findSupportedFormat(const std::vector<VkForma
 void HelloTriangleApplication::createTextureImage()
 {
 	int texWidth, texHeight, texChannels;
-	auto pixels = stbi_load("textures/a-button.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	auto pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	LogInfo("loaded texWidth: " + std::to_string(texWidth));
@@ -1252,14 +1261,58 @@ void HelloTriangleApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
 	endSingleTimeCommands(commandBuffer);
 }
 
+void HelloTriangleApplication::loadModel()
+{
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string err;
+
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, MODEL_PATH.c_str()))
+	{
+		throw std::runtime_error(err);
+	}
+
+	std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+
+	for (const auto& shape : shapes)
+	{
+		for (const auto& index : shape.mesh.indices)
+		{
+			Vertex vertex = {};
+
+			vertex.pos = {
+				attrib.vertices[3 * index.vertex_index + 0],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 2]
+			};
+
+			vertex.texCoord = {
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+
+			vertex.color = { 1.0f, 1.0f, 1.0f };
+
+			if (uniqueVertices.count(vertex) == 0)
+			{
+				uniqueVertices[vertex] = static_cast<uint32_t>(mainMeshVertices.size());
+				mainMeshVertices.push_back(vertex);
+			}
+
+			mainMeshIndices.push_back(uniqueVertices[vertex]);
+		}
+	}
+}
+
 void HelloTriangleApplication::createVertexBuffer()
 {
-	VkDeviceSize bufferSize = sizeof(squareVertices[0]) * squareVertices.size();
+	VkDeviceSize bufferSize = sizeof(mainMeshVertices[0]) * mainMeshVertices.size();
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-	copyToBufferMemory(squareVertices.data(), stagingBufferMemory, 0, bufferSize, 0);
+	copyToBufferMemory(mainMeshVertices.data(), stagingBufferMemory, 0, bufferSize, 0);
 
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
@@ -1271,13 +1324,13 @@ void HelloTriangleApplication::createVertexBuffer()
 
 void HelloTriangleApplication::createIndexBuffer()
 {
-	auto bufferSize = sizeof(squareIndices[0]) * squareIndices.size();
+	auto bufferSize = sizeof(mainMeshIndices[0]) * mainMeshIndices.size();
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
-	copyToBufferMemory(squareIndices.data(), stagingBufferMemory, 0, bufferSize, 0);
+	copyToBufferMemory(mainMeshIndices.data(), stagingBufferMemory, 0, bufferSize, 0);
 
 	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
@@ -1468,11 +1521,11 @@ void HelloTriangleApplication::createCommandBuffers()
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
-		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(squareIndices.size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(mainMeshIndices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -1497,6 +1550,8 @@ void HelloTriangleApplication::createSemaphores()
 
 void HelloTriangleApplication::mainLoop()
 {
+	LogInfo("Main loop start!");
+
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
@@ -1521,11 +1576,13 @@ void HelloTriangleApplication::updateUniformBuffer()
 
 	UniformBufferObject ubo = {};
 
-	ubo.model = glm::rotate(glm::mat4(), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::translate(glm::mat4(), glm::vec3(-3.0f, -3.0f, -3.0f));
+	ubo.model = glm::rotate(ubo.model, elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::rotate(ubo.model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
 
 	ubo.proj[1][1] *= -1;
 

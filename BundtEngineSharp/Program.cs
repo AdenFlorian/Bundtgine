@@ -8,7 +8,7 @@ namespace BundtEngine
 		private const string DllFilePath = "BundtLowLevelEngine.dll";
 
 		[DllImport(DllFilePath, CallingConvention = CallingConvention.Cdecl)]
-		private extern static int start(Vector3[] vertices, UInt32 verticesSize, UInt16[] indices, UInt32 indicesSize, Vector3[] colors, Vector2[] texCoords);
+		private extern static int start(Vector3[] vertices, UInt32 verticesSize, UInt32[] indices, UInt32 indicesSize, Vector3[] colors, Vector2[] texCoords);
 
 		static int Main(string[] args)
         {
@@ -25,7 +25,7 @@ namespace BundtEngine
 				new Vector3(-0.5f, 0.5f, -0.5f)
 			};
 
-			var indices = new UInt16[] {
+			var indices = new UInt32[] {
 				0, 1, 2, 2, 3, 0,
 				4, 5, 6, 6, 7, 4
 			};
@@ -87,11 +87,11 @@ namespace BundtEngine
 	struct GameObject
 	{
 		public Vector3[] Vertices;
-		public UInt16[] Indices;
+		public UInt32[] Indices;
 		public Vector3[] Colors;
 		public Vector2[] TexCoords;
 
-		public GameObject(Vector3[] vertices, UInt16[] indices, Vector3[] colors, Vector2[] texCoords)
+		public GameObject(Vector3[] vertices, UInt32[] indices, Vector3[] colors, Vector2[] texCoords)
 		{
 			Vertices = vertices;
 			Indices = indices;

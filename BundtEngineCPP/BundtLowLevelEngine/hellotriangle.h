@@ -70,8 +70,8 @@ private:
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
 
-	std::vector<Vertex> squareVertices;
-	std::vector<uint16_t> squareIndices;
+	std::vector<Vertex> mainMeshVertices;
+	std::vector<uint32_t> mainMeshIndices;
 
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 	void initWindow();
@@ -99,6 +99,7 @@ private:
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+	void loadModel();
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffer();
