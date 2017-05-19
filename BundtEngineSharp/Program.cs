@@ -8,22 +8,33 @@ namespace BundtEngine
 		private const string DllFilePath = "BundtLowLevelEngine.dll";
 
 		[DllImport(DllFilePath, CallingConvention = CallingConvention.Cdecl)]
-		private extern static int start(Fred[] vertices, UInt32 verticesSize, UInt16[] indices, UInt32 indicesSize, Fred[] colors, Vector2[] texCoords);
+		private extern static int start(Vector3[] vertices, UInt32 verticesSize, UInt16[] indices, UInt32 indicesSize, Vector3[] colors, Vector2[] texCoords);
 
 		static int Main(string[] args)
         {
             Console.WriteLine("Hello World!");
 
-			var vertices = new Fred[] {
-				new Fred(-0.5f, -0.5f, 0.0f, 1f),
-				new Fred(0.5f, -0.5f, 0.0f, 1f),
-				new Fred(0.5f, 0.5f, 0.0f, 1f),
-				new Fred(-0.5f, 0.5f, 0.0f, 1f)
+			var vertices = new Vector3[] {
+				new Vector3(-0.5f, -0.5f, 0.0f),
+				new Vector3(0.5f, -0.5f, 0.0f),
+				new Vector3(0.5f, 0.5f, 0.0f),
+				new Vector3(-0.5f, 0.5f, 0.0f),
+				new Vector3(-0.5f, -0.5f, -0.5f),
+				new Vector3(0.5f, -0.5f, -0.5f),
+				new Vector3(0.5f, 0.5f, -0.5f),
+				new Vector3(-0.5f, 0.5f, -0.5f)
 			};
 
-			var indices = new UInt16[] { 0, 1, 2, 2, 3, 0 };
+			var indices = new UInt16[] {
+				0, 1, 2, 2, 3, 0,
+				4, 5, 6, 6, 7, 4
+			};
 
-			var colors = new Fred[] {
+			var colors = new Vector3[] {
+				Color.Blue,
+				Color.Purple,
+				Color.Red,
+				Color.Green,
 				Color.Red,
 				Color.Green,
 				Color.Blue,
@@ -34,7 +45,11 @@ namespace BundtEngine
 				new Vector2(0.0f, 0.0f),
 				new Vector2(1.0f, 0.0f),
 				new Vector2(1.0f, 1.0f),
-				new Vector2(0.0f, 1.0f)
+				new Vector2(0.0f, 1.0f),
+				new Vector2(1.0f, 1.0f),
+				new Vector2(0.0f, 1.0f),
+				new Vector2(0.0f, 0.0f),
+				new Vector2(1.0f, 0.0f)
 			};
 
 			var go = new GameObject(vertices, indices, colors, texCoords);
@@ -55,30 +70,28 @@ namespace BundtEngine
 		}
 	}
 
-	struct Fred
+	struct Vector3
 	{
 		float X;
 		float Y;
 		float Z;
-		float W;
 
-		public Fred(float x, float y, float z, float w)
+		public Vector3(float x, float y, float z)
 		{
 			X = x;
 			Y = y;
 			Z = z;
-			W = w;
 		}
 	}
 
 	struct GameObject
 	{
-		public Fred[] Vertices;
+		public Vector3[] Vertices;
 		public UInt16[] Indices;
-		public Fred[] Colors;
+		public Vector3[] Colors;
 		public Vector2[] TexCoords;
 
-		public GameObject(Fred[] vertices, UInt16[] indices, Fred[] colors, Vector2[] texCoords)
+		public GameObject(Vector3[] vertices, UInt16[] indices, Vector3[] colors, Vector2[] texCoords)
 		{
 			Vertices = vertices;
 			Indices = indices;
@@ -89,9 +102,9 @@ namespace BundtEngine
 
 	static class Color
 	{
-		public static Fred Red = new Fred(1f, 0f, 0f, 1f);
-		public static Fred Green = new Fred(0f, 1f, 0f, 1f);
-		public static Fred Blue = new Fred(0f, 0f, 1f, 1f);
-		public static Fred Purple = new Fred(1f, 0f, 1f, 1f);
+		public static Vector3 Red = new Vector3(1f, 0f, 0f);
+		public static Vector3 Green = new Vector3(0f, 1f, 0f);
+		public static Vector3 Blue = new Vector3(0f, 0f, 1f);
+		public static Vector3 Purple = new Vector3(1f, 0f, 1f);
 	}
 }

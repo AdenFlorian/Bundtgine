@@ -66,6 +66,9 @@ private:
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureImageView;
 	VkSampler textureSampler;
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
 
 	std::vector<Vertex> squareVertices;
 	std::vector<uint16_t> squareIndices;
@@ -88,6 +91,7 @@ private:
 	void createShaderModule(const std::vector<char>& code, VkShaderModule & shaderModule);
 	void createFramebuffers();
 	void createCommandPool();
+	void createDepthResources();
 	void createTempCommandPool();
 	void createTextureImage();
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage & image, VkDeviceMemory & imageMemory);
@@ -112,6 +116,8 @@ private:
 	void cleanup();
 	void cleanupSwapChain();
 	void createTextureImageView();
-	void createImageView(VkImage image, VkFormat format, VkImageView * imageView);
+	void createImageView(VkImage image, VkFormat format, VkImageView * imageView, VkImageAspectFlags aspectFlags);
 	void createTextureSampler();
+	VkFormat findDepthFormat();
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 };
